@@ -124,6 +124,7 @@ int connect_AU(const char* ip, const char* port, const char* client_name)
     int data_size = strlen(INITIAL_MESSAGE);
     strcpy(send_data, INITIAL_MESSAGE);
     strncpy(send_data + data_size, client_name, MAX_DATA_SIZE - data_size);
+    send_data[MAX_DATA_SIZE] = 0;
     data_size = strlen(send_data);
 
     int no_failed_packets = 0;
