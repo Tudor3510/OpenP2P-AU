@@ -27,8 +27,31 @@
 #define MAXIMUM_RETRIES 6
 #define PAUSE_TIME 950
 
+
+#define SUCCESS 0
+const static char* SUCCESS_TEXT = "Connected successfully";
+
+#define SOCKET_INIT_ERROR 1
+const static char* SOCKET_INIT_ERROR_TEXT = "Error initializing the socket";
+
+#define SOCKET_BIND_ERROR 2
+const static char* SOCKET_BIND_ERROR_TEXT = "Error binding the socket to the required port"
+                                            "\nMake sure that Among Us is not running in the local games menu"
+                                            "\nFor safety, you can completely close Among Us while connecting";
+
+#define HOSTNAME_RESOLUTION_ERROR 3
+const static char* HOSTNAME_RESOLUTION_ERROR_TEXT = "Could not resolve the hostname";
+
+#define NO_PACKET_SENT 4
+const static char* NO_PACKET_SENT_TEXT = "Can not send the request for initializing connection";
+
+#define CONNECTION_FAILED 5
+const static char* CONNECTION_FAILED_TEXT = "Connection failed";
+
+
 const static char* INITIAL_MESSAGE = "connect~";
 const static char* RECEIVE_MESSAGE = ".....";
+
 
 static char send_data[MAX_DATA_SIZE + 1];
 static char received_data[MAX_DATA_SIZE + 1];
@@ -103,20 +126,20 @@ static void custom_pause(unsigned int time)
 int connect_AU(const char* ip, const char* port, const char* client_name)
 {
     if (initialize_socket_lib() != 0)
-        return 1;
+        return SOCKET_INIT_ERROR;
 
     // Create a UDP socket
     SOCKET udp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (udp_socket == INVALID_SOCKET) {
         close_socket(NULL);
-        return 1;
+        return SOCKET_INIT_ERROR;
     }
 
     // Set the socket to non-blocking mode
     
     if (set_nonblocking_socket(&udp_socket) == SOCKET_ERROR) {
         close_socket(&udp_socket);
-        return 1;
+        return SOCKET_INIT_ERROR;
     }
 
     // Set up the local address information to bind to AU port
@@ -128,7 +151,7 @@ int connect_AU(const char* ip, const char* port, const char* client_name)
     // Bind the UDP socket to the local address
     if (bind(udp_socket, (struct sockaddr*)&localAddr, sizeof(localAddr)) == SOCKET_ERROR) {
         close_socket(&udp_socket);
-        return 2;
+        return SOCKET_BIND_ERROR;
     }
 
 
@@ -143,7 +166,7 @@ int connect_AU(const char* ip, const char* port, const char* client_name)
     int getAddressResult = getaddrinfo(ip, port, &hints, &addr_result);
     if (getAddressResult != 0 || addr_result == NULL) {
         close_socket(&udp_socket);
-        return 3;
+        return HOSTNAME_RESOLUTION_ERROR;
     }
 
     struct sockaddr* server_addr = addr_result->ai_addr;
@@ -193,11 +216,37 @@ int connect_AU(const char* ip, const char* port, const char* client_name)
 
 
     if (no_failed_packets == MAXIMUM_RETRIES)
-        return 4;
+        return NO_PACKET_SENT;
 
     if (!connected)
-        return 5;
+        return CONNECTION_FAILED;
 
-    return 0;
+    return SUCCESS;
 }
 
+const char* get_error_message_AU(int error_code)
+{
+    switch (error_code)
+    {
+    case SUCCESS:
+        return SUCCESS_TEXT;
+
+    case SOCKET_INIT_ERROR:
+        return SOCKET_INIT_ERROR_TEXT;
+
+    case SOCKET_BIND_ERROR:
+        return SOCKET_BIND_ERROR_TEXT;
+
+    case HOSTNAME_RESOLUTION_ERROR:
+        return HOSTNAME_RESOLUTION_ERROR_TEXT;
+
+    case NO_PACKET_SENT:
+        return NO_PACKET_SENT_TEXT;
+    
+    case CONNECTION_FAILED:
+        return CONNECTION_FAILED_TEXT;
+    
+    default:
+        return NULL;
+    }
+}
