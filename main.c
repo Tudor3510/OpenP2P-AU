@@ -4,7 +4,7 @@
 
 int main()
 {
-    printf("%d\n", connect_AU("192.168.0.100", 6767, "Something"));
+    printf("%d\n", connect_AU("192.168.0.100", "6777", "Something"));
 
     return 0;
 }

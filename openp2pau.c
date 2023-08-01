@@ -9,7 +9,7 @@
 
 #else
 
-#define US_MULTIPLIER = 1000
+#define US_MULTIPLIER 1000
 #define SOCKET int
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
@@ -72,22 +72,22 @@ static void pause(unsigned int time)
 
 #endif
 
-int connect_AU(const char* ip, int port, const char* client_name)
+int connect_AU(const char* ip, const char* port, const char* client_name)
 {
     if (initialize_socket_lib() != 0)
         return 1;
 
     // Create a UDP socket
-    SOCKET udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (udpSocket == INVALID_SOCKET) {
+    SOCKET udp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (udp_socket == INVALID_SOCKET) {
         close_socket(NULL);
         return 1;
     }
 
     // Set the socket to non-blocking mode
     u_long nonBlockingMode = 1;
-    if (ioctlsocket(udpSocket, FIONBIO, &nonBlockingMode) == SOCKET_ERROR) {
-        close_socket(&udpSocket);
+    if (ioctlsocket(udp_socket, FIONBIO, &nonBlockingMode) == SOCKET_ERROR) {
+        close_socket(&udp_socket);
         return 1;
     }
 
@@ -98,16 +98,27 @@ int connect_AU(const char* ip, int port, const char* client_name)
     localAddr.sin_addr.s_addr = INADDR_ANY; // Bind to any available local address
 
     // Bind the UDP socket to the local address
-    if (bind(udpSocket, (struct sockaddr*)&localAddr, sizeof(localAddr)) == SOCKET_ERROR) {
-        close_socket(&udpSocket);
+    if (bind(udp_socket, (struct sockaddr*)&localAddr, sizeof(localAddr)) == SOCKET_ERROR) {
+        close_socket(&udp_socket);
         return 2;
     }
 
-    // Set up the destination address information
-    struct sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(port); // Replace with the destination port number
-    serverAddr.sin_addr.s_addr = inet_addr(ip); // Replace with the destination IP address
+
+    struct addrinfo* addr_result = NULL;
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_flags = AI_ADDRCONFIG|AI_V4MAPPED;
+    hints.ai_family = AF_INET; // Use AF_INET for IPv4
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = IPPROTO_UDP;
+
+    int getAddressResult = getaddrinfo(ip, port, &hints, &addr_result);
+    if (getAddressResult != 0 || addr_result == NULL) {
+        close_socket(&udp_socket);
+        return 3;
+    }
+
+    struct sockaddr* server_addr = addr_result->ai_addr;
 
     // Data to be sent
     int data_size = strlen(INITIAL_MESSAGE);
@@ -123,7 +134,7 @@ int connect_AU(const char* ip, int port, const char* client_name)
     int connected = 0;
     for (int i=1; i <= MAXIMUM_RETRIES && !connected; i++)
     {
-        sent_bytes = sendto(udpSocket, send_data, data_size, 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+        sent_bytes = sendto(udp_socket, send_data, data_size, 0, server_addr, sizeof(*server_addr));
         if (sent_bytes <= 0)
         {
             no_failed_packets += 1;
@@ -131,7 +142,7 @@ int connect_AU(const char* ip, int port, const char* client_name)
 
         pause(PAUSE_TIME);
 
-        received_bytes = recvfrom(udpSocket, received_data, MAX_DATA_SIZE, 0, NULL, NULL);
+        received_bytes = recvfrom(udp_socket, received_data, MAX_DATA_SIZE, 0, NULL, NULL);
         if (received_bytes > 0)
         {
             int bytes_to_compare =  received_bytes;
@@ -148,14 +159,15 @@ int connect_AU(const char* ip, int port, const char* client_name)
 
     }
 
-    close_socket(&udpSocket);
+    close_socket(&udp_socket);
+    freeaddrinfo(addr_result);
 
 
     if (no_failed_packets == MAXIMUM_RETRIES)
-        return 3;
+        return 4;
 
     if (!connected)
-        return 4;
+        return 5;
 
     return 0;
 }
