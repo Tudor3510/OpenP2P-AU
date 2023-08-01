@@ -8,6 +8,12 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #else
+#include <unistd.h>
+#include <sys/socket.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <fcntl.h>
 
 #define US_MULTIPLIER 1000
 #define SOCKET int
@@ -47,7 +53,13 @@ static int initialize_socket_lib()
     return 0;
 }
 
-static void pause(unsigned int time)
+static int set_nonblocking_socket(SOCKET* socket)
+{
+    u_long nonBlockingMode = 1;
+    return ioctlsocket(*socket, FIONBIO, &nonBlockingMode);
+}
+
+static void custom_pause(unsigned int time)
 {
     Sleep(time);
 }
@@ -65,7 +77,23 @@ static int initialize_socket_lib()
     return 0;
 }
 
-static void pause(unsigned int time)
+static int set_nonblocking_socket(SOCKET* socket)
+{
+    int flags = fcntl(*socket, F_GETFL, 0);
+    if (flags == -1) {
+        return SOCKET_ERROR;
+    }
+
+    flags |= O_NONBLOCK;
+
+    if (fcntl(*socket, F_SETFL, flags) == -1) {
+        return SOCKET_ERROR;
+    }
+
+    return 0;
+}
+
+static void custom_pause(unsigned int time)
 {
     usleep(time * US_MULTIPLIER);
 }
@@ -85,8 +113,8 @@ int connect_AU(const char* ip, const char* port, const char* client_name)
     }
 
     // Set the socket to non-blocking mode
-    u_long nonBlockingMode = 1;
-    if (ioctlsocket(udp_socket, FIONBIO, &nonBlockingMode) == SOCKET_ERROR) {
+    
+    if (set_nonblocking_socket(&udp_socket) == SOCKET_ERROR) {
         close_socket(&udp_socket);
         return 1;
     }
@@ -141,7 +169,7 @@ int connect_AU(const char* ip, const char* port, const char* client_name)
             no_failed_packets += 1;
         }
 
-        pause(PAUSE_TIME);
+        custom_pause(PAUSE_TIME);
 
         received_bytes = recvfrom(udp_socket, received_data, MAX_DATA_SIZE, 0, NULL, NULL);
         if (received_bytes > 0)
