@@ -24,8 +24,8 @@
 
 
 static const char* CONNECTING_MESSAGE = "Connecting";
-static const char* SERVER_PORT = "6779";
-static const char* port[MAX_DATA_SIZE + 1];
+static const char* DEFAULT_SERVER_PORT = "6779";
+static const char* server_port[MAX_DATA_SIZE + 1];
 static const char* DEFAULT_CLIENT_NAME = "Unknown";
 static char client_name[MAX_DATA_SIZE + 1];
 
@@ -100,7 +100,7 @@ int main()
     int client_name_len = MAX_DATA_SIZE;
     GetUserNameA(client_name, &client_name_len);
 
-    int error_code = connect_AU("192.168.0.100", PORT, client_name);
+    int error_code = connect_AU("192.168.0.100", DEFAULT_SERVER_PORT, client_name);
 
     EnterCriticalSection(&critical_section);
     run_connecting_thread = 0;
@@ -164,7 +164,7 @@ int main()
     strcpy(client_name, DEFAULT_CLIENT_NAME);
     gethostname(client_name, MAX_DATA_SIZE);
 
-    int error_code = connect_AU("192.168.0.100", PORT, client_name);
+    int error_code = connect_AU("192.168.0.100", DEFAULT_SERVER_PORT, client_name);
 
     pthread_mutex_lock(&critical_section);
     run_connecting_thread = 0;
