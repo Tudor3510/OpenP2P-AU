@@ -52,10 +52,12 @@ static void print_connecting(void* lpParam)
     LeaveCriticalSection(critical_section);
 
     printf("%s", CONNECTING_MESSAGE);
+    fflush(stdout);
     no_characters_printed += strlen(CONNECTING_MESSAGE);
     while (1)
     {
         printf(".");
+        fflush(stdout);
         no_characters_printed += 1;
 
         Sleep(DOT_INTERVAL);
