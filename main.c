@@ -5,6 +5,7 @@
 #ifdef _WIN32
 
 #include <windows.h>
+#pragma comment(lib, "Advapi32.lib")
 
 #else
 
@@ -19,9 +20,12 @@
 #endif
 
 #define DOT_INTERVAL 500
+#define MAX_DATA_SIZE 150
 
 static int no_characters_printed = 0;
 static const char* CONNECTING_MESSAGE = "Connecting";
+static const char* DEFAULT_CLIENT_NAME = "Unknown";
+static char client_name[MAX_DATA_SIZE + 1];
 static int run_connecting_thread = 1;
 
 
@@ -88,7 +92,11 @@ int main()
         return 1;
     }
 
-    int error_code = connect_AU("192.168.0.100", "6779", "Something");
+    strcpy(client_name, DEFAULT_CLIENT_NAME);
+    int client_name_len = MAX_DATA_SIZE;
+    GetUserNameA(client_name, &client_name_len);
+
+    int error_code = connect_AU("192.168.0.100", "6779", client_name);
 
     EnterCriticalSection(&critical_section);
     run_connecting_thread = 0;
@@ -149,7 +157,10 @@ int main()
         return 1;
     }
 
-    int error_code = connect_AU("192.168.0.100", "6779", "Something");
+    strcpy(client_name, DEFAULT_CLIENT_NAME);
+    gethostname(client_name, MAX_DATA_SIZE);
+
+    int error_code = connect_AU("192.168.0.100", "6779", client_name);
 
     pthread_mutex_lock(&critical_section);
     run_connecting_thread = 0;
