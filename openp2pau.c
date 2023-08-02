@@ -8,6 +8,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #else
+
 #include <unistd.h>
 #include <sys/socket.h>
 #include <string.h>
@@ -36,7 +37,7 @@ const static char* SOCKET_INIT_ERROR_TEXT = "Error initializing the socket";
 
 #define SOCKET_BIND_ERROR 2
 const static char* SOCKET_BIND_ERROR_TEXT = "Error binding the socket to the required port"
-                                            "\nMake sure that Among Us is not running in the local games menu"
+                                            "\nMake sure that Among Us is not running in the local or online games menu"
                                             "\nFor safety, you can completely close Among Us while connecting";
 
 #define HOSTNAME_RESOLUTION_ERROR 3
