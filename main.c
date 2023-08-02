@@ -24,6 +24,8 @@
 
 static int no_characters_printed = 0;
 static const char* CONNECTING_MESSAGE = "Connecting";
+static const char* SERVER_PORT = "6779";
+static const char* port[MAX_DATA_SIZE + 1];
 static const char* DEFAULT_CLIENT_NAME = "Unknown";
 static char client_name[MAX_DATA_SIZE + 1];
 static int run_connecting_thread = 1;
